@@ -1,0 +1,8 @@
+<div #mapEl class="absolute inset-0 z-0"></div>
+@if (!ready()) {
+  <div class="absolute inset-0 grid place-items-center text-sm text-neutral-500">
+    <div class="flex items-center gap-2">
+      <span class="icon animate-spin">progress_activity</span> กำลังโหลดแผนที่...
+    </div>
+  </div>
+}

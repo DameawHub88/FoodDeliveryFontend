@@ -1,0 +1,321 @@
+<div class="flex min-h-full flex-col lg:h-full lg:flex-row">
+  <!-- แผงควบคุม -->
+  <aside class="order-2 flex min-h-0 flex-col border-neutral-200 bg-white lg:order-1 lg:w-[440px] lg:shrink-0 lg:border-r">
+    <div class="border-b border-neutral-100 px-5 pt-5 pb-4">
+      <h1 class="text-2xl font-normal text-ink">จัดเส้นทางจัดส่ง</h1>
+      <p class="mt-1 text-sm text-neutral-500">
+        {{ orders().length }} ออเดอร์ · {{ boxes() }} กล่อง · ออก {{ rules.departTime }} ถึงก่อน {{ deadline }}
+      </p>
+
+      @if (orders().length) {
+        <div class="mt-4 flex flex-wrap gap-2">
+          @if (candidates().length) {
+            <button class="btn btn-outline" (click)="compute(true)" [disabled]="computing()">
+              <span class="icon" [class.animate-spin]="computing()">{{ computing() ? 'progress_activity' : 'refresh' }}</span>
+              คำนวณใหม่
+            </button>
+            <button
+              class="btn btn-primary flex-1"
+              (click)="confirmPlan()"
+              [disabled]="saving() || computing() || (shown()?.summary.lateCount ?? 0) > 0"
+            >
+              <span class="icon">task_alt</span> ยืนยันแผนและออกใบงาน
+            </button>
+          } @else {
+            <button class="btn btn-primary btn-lg w-full" (click)="compute()" [disabled]="computing()">
+              <span class="icon" [class.animate-spin]="computing()">{{ computing() ? 'progress_activity' : 'alt_route' }}</span>
+              {{ computing() ? 'กำลังคำนวณเส้นทาง...' : confirmed() ? 'จัดเส้นทางใหม่' : 'จัดเส้นทาง' }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="flex-1 space-y-4 overflow-y-auto p-5 lg:min-h-0">
+      @if (loading()) {
+        <div class="h-24 animate-pulse rounded-2xl bg-neutral-100"></div>
+        <div class="h-40 animate-pulse rounded-2xl bg-neutral-100"></div>
+      } @else if (!orders().length) {
+        <div class="rounded-3xl border border-dashed border-neutral-300 p-8 text-center">
+          <span class="icon text-5xl! text-neutral-300">receipt_long</span>
+          <p class="mt-2 font-medium text-ink">ยังไม่มีออเดอร์วันนี้</p>
+          <p class="mt-1 text-sm text-neutral-500">เพิ่มหรือจำลองออเดอร์ก่อน แล้วกลับมากดจัดเส้นทาง</p>
+          <a routerLink="/owner/orders" class="btn btn-primary mt-5">
+            <span class="icon">add_shopping_cart</span> ไปหน้าออเดอร์
+          </a>
+        </div>
+      } @else {
+        <!-- สถานะแผน -->
+        @if (isConfirmedView()) {
+          @if (confirmedStale()) {
+            <div class="flex gap-3 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+              <span class="icon text-amber-600">warning</span>
+              <div>
+                <div class="font-medium">ออเดอร์เปลี่ยนไปหลังยืนยันแผน</div>
+                <div class="mt-0.5 text-xs">มีการเพิ่ม/ลบ/แก้ออเดอร์ กรุณากด “จัดเส้นทางใหม่” แล้วยืนยันอีกครั้ง</div>
+              </div>
+            </div>
+          } @else {
+            <div class="flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900">
+              <span class="icon icon-fill text-emerald-600">verified</span>
+              <div class="flex-1">
+                <div class="font-medium">แผนที่ยืนยันแล้ว · {{ confirmed()!.label }}</div>
+                <div class="mt-0.5 text-xs">ส่งเลขใบงานด้านล่างให้ไรเดอร์แต่ละคนได้เลย</div>
+              </div>
+              <button class="btn btn-text h-8 px-2 text-xs text-red-600 hover:bg-red-50" (click)="cancelConfirmed()">ยกเลิกแผน</button>
+            </div>
+          }
+        } @else if (!candidates().length) {
+          <div class="rounded-3xl bg-ink p-6 text-white">
+            <span class="icon icon-fill text-4xl! text-brand-300">alt_route</span>
+            <p class="mt-3 text-lg font-medium">พร้อมจัดเส้นทางแล้ว</p>
+            <p class="mt-1 text-sm leading-relaxed text-neutral-300">
+              ระบบจะแบ่งออเดอร์ให้ไรเดอร์คนละไม่เกิน {{ rules.maxOrdersPerRider }} ออเดอร์ เรียงจุดส่งให้วิ่งสั้นที่สุด
+              ส่งทันก่อน {{ deadline }} และเสนอ 3 ทางเลือกให้เปรียบเทียบกำไร-ขาดทุน
+            </p>
+          </div>
+        }
+
+        <!-- ทางเลือกของแผน -->
+        @if (candidates().length) {
+          <div>
+            <div class="mb-2 flex items-center justify-between">
+              <h2 class="text-sm font-medium text-ink">ทางเลือกเส้นทาง</h2>
+              <button class="text-xs font-medium text-neutral-500 hover:text-ink" (click)="discardCandidates()">ยกเลิก</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              @for (c of candidates(); track c.id; let i = $index) {
+                <button
+                  class="rounded-2xl border p-3 text-left transition"
+                  [class]="planner.selected() === i ? 'border-brand-700 bg-brand-50 ring-1 ring-brand-700' : 'border-neutral-200 hover:border-neutral-400'"
+                  (click)="selectCandidate(i)"
+                >
+                  <div class="text-[11px] font-medium text-neutral-500">แผน {{ 'ABC'.charAt(i) }}</div>
+                  <div class="text-sm font-semibold text-ink">{{ c.label }}</div>
+                  <div class="mt-2 text-base font-semibold" [class]="c.summary.profit >= 0 ? 'text-emerald-700' : 'text-red-600'">
+                    ฿{{ c.summary.profit | number: '1.0-0' }}
+                  </div>
+                  <div class="mt-0.5 text-[11px] leading-tight text-neutral-500">
+                    {{ c.summary.riders }} คน · เสร็จ {{ c.summary.finishTime }}
+                  </div>
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- สรุปค่าใช้จ่าย กำไร ขาดทุน และเวลา -->
+        @if (shown(); as p) {
+          @if (!(isConfirmedView() && confirmedStale())) {
+            <section class="rounded-3xl border border-neutral-200 p-5">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="text-xs text-neutral-500">{{ p.summary.profit >= 0 ? 'กำไรสุทธิ' : 'ขาดทุน' }}</div>
+                  <div class="text-4xl font-semibold tracking-tight" [class]="p.summary.profit >= 0 ? 'text-emerald-700' : 'text-red-600'">
+                    ฿{{ p.summary.profit | number: '1.0-2' }}
+                  </div>
+                </div>
+                @if (p.summary.lateCount === 0) {
+                  <span class="badge mt-1 bg-emerald-50 text-emerald-700"><span class="icon text-sm!">timer</span> ทันทุกจุด</span>
+                } @else {
+                  <span class="badge mt-1 bg-red-50 text-red-700"><span class="icon text-sm!">timer_off</span> เลท {{ p.summary.lateCount }} จุด</span>
+                }
+              </div>
+
+              <dl class="mt-4 space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <dt class="text-neutral-600">ยอดขาย {{ p.summary.boxes }} กล่อง × {{ pricing.pricePerBox }}</dt>
+                  <dd class="font-medium text-ink">฿{{ p.summary.revenue | number }}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-neutral-600">ต้นทุนอาหาร × {{ pricing.costPerBox }}</dt>
+                  <dd class="font-medium text-ink">−฿{{ p.summary.foodCost | number }}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-neutral-600">ค่าไรเดอร์ {{ p.summary.riders }} คน</dt>
+                  <dd class="font-medium text-ink">−฿{{ p.summary.riderCost | number: '1.0-2' }}</dd>
+                </div>
+              </dl>
+
+              <div class="mt-4 grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4 text-center">
+                <div>
+                  <div class="text-lg font-semibold text-ink">{{ p.summary.totalKm | number: '1.1-1' }}</div>
+                  <div class="text-[11px] text-neutral-500">กม. รวม</div>
+                </div>
+                <div>
+                  <div class="text-lg font-semibold text-ink">{{ p.summary.avgArriveMin }}<span class="text-xs font-normal"> นาที</span></div>
+                  <div class="text-[11px] text-neutral-500">ลูกค้ารอเฉลี่ย</div>
+                </div>
+                <div>
+                  <div class="text-lg font-semibold" [class]="p.summary.maxArriveMin > rules.deadlineMin ? 'text-red-600' : 'text-ink'">
+                    {{ p.summary.finishTime }}
+                  </div>
+                  <div class="text-[11px] text-neutral-500">ส่งจุดสุดท้าย</div>
+                </div>
+              </div>
+
+              @if (vsBaseline() !== null && vsBaseline()! > 0) {
+                <div class="mt-4 flex items-center gap-2 rounded-xl bg-brand-50 px-3 py-2.5 text-xs text-brand-900">
+                  <span class="icon text-brand-700">savings</span>
+                  กำไรเพิ่มขึ้น ฿{{ vsBaseline() | number: '1.0-2' }} เทียบกับแบ่งงานตามลำดับออเดอร์ (คันละ 3 ออเดอร์)
+                </div>
+              }
+              @if (p.summary.profit < 0) {
+                <div class="mt-3 flex gap-2 rounded-xl bg-red-50 px-3 py-2.5 text-xs text-red-800">
+                  <span class="icon text-red-600">trending_down</span>
+                  แผนนี้ขาดทุน ลองเลือกแผน “ประหยัดที่สุด” หรือกด “คำนวณใหม่” เพื่อดูเส้นทางอื่น
+                </div>
+              }
+
+              <button
+                class="mt-3 flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-ink"
+                (click)="showAssumptions.set(!showAssumptions())"
+              >
+                <span class="icon text-base!">{{ showAssumptions() ? 'expand_less' : 'expand_more' }}</span>
+                วิธีคิดค่าใช้จ่ายและเวลา
+              </button>
+              @if (showAssumptions()) {
+                <ul class="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-neutral-600">
+                  <li>ค่าไรเดอร์ต่อคน = {{ pricing.riderBaseFee }} บาท + {{ pricing.riderFeePerKmPerBox }} บาท × จำนวนกล่อง × ระยะทางที่วิ่งส่ง (กม.)</li>
+                  <li>ระยะทางคิดจากร้านไปจุดส่งสุดท้าย (ระยะเส้นตรง × {{ rules.roadFactor }} เป็นระยะถนนโดยประมาณ)</li>
+                  <li>ความเร็วไรเดอร์ {{ rules.riderSpeedKmh }} กม./ชม. และเผื่อเวลาส่งของจุดละ {{ rules.serviceMinPerStop }} นาที</li>
+                  <li>ทุกจุดต้องถึงภายใน {{ rules.deadlineMin }} นาทีหลังออกจากร้าน ({{ rules.departTime }}–{{ deadline }})</li>
+                </ul>
+              }
+            </section>
+
+            <!-- รายชื่อไรเดอร์ -->
+            <section>
+              <h2 class="mb-2 text-sm font-medium text-ink">ไรเดอร์ {{ p.routes.length }} คน</h2>
+              <ul class="space-y-2">
+                @for (r of p.routes; track r.riderNo) {
+                  <li
+                    class="overflow-clip rounded-2xl border transition"
+                    [class]="activeRider() === r.riderNo ? 'border-neutral-400 shadow-md' : 'border-neutral-200'"
+                  >
+                    <button class="flex w-full items-center gap-3 p-3 text-left hover:bg-neutral-50" (click)="toggleRider(r.riderNo)">
+                      <span class="grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white" [style.background]="r.color">
+                        {{ r.riderNo }}
+                      </span>
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm font-medium text-ink">ไรเดอร์ {{ r.riderNo }}</span>
+                          @if (r.jobCode) {
+                            <span class="badge bg-ink font-mono text-brand-100">#{{ r.jobCode }}</span>
+                          }
+                          @if (r.profit < 0) {
+                            <span class="badge bg-red-50 text-red-700">ขาดทุน</span>
+                          }
+                        </div>
+                        <div class="truncate text-xs text-neutral-500">
+                          {{ r.stops.length }} จุด · {{ r.totalBoxes }} กล่อง · {{ r.distanceKm | number: '1.1-1' }} กม. · {{ r.durationMin }} นาที
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        <div class="text-sm font-semibold text-ink">฿{{ r.riderCost | number: '1.0-0' }}</div>
+                        <div class="text-[11px] text-neutral-500">ค่าไรเดอร์</div>
+                      </div>
+                      <span class="icon text-neutral-400">{{ expanded() === r.riderNo ? 'expand_less' : 'expand_more' }}</span>
+                    </button>
+
+                    @if (expanded() === r.riderNo) {
+                      <div class="border-t border-neutral-100 bg-surface px-4 py-3">
+                        <ol class="relative ml-3 border-l-2 border-dashed pl-5" [style.border-color]="r.color">
+                          <li class="relative pb-3">
+                            <span class="absolute top-0.5 -left-[31px] grid size-5 place-items-center rounded-full bg-ink text-white">
+                              <span class="icon text-[13px]!">storefront</span>
+                            </span>
+                            <div class="text-xs text-neutral-500">{{ p.departTime }} · ออกจากร้าน (หยิบ {{ r.totalBoxes }} กล่อง)</div>
+                          </li>
+                          @for (s of r.stops; track s.orderId) {
+                            <li class="relative pb-3 last:pb-0">
+                              <span
+                                class="absolute top-0.5 -left-[31px] grid size-5 place-items-center rounded-full text-[11px] font-bold text-white"
+                                [style.background]="r.color"
+                                >{{ s.seq }}</span
+                              >
+                              <div class="text-sm font-medium text-ink">{{ s.customerName }} · {{ s.quantity }} กล่อง</div>
+                              <div class="text-xs text-neutral-500">
+                                ถึง {{ s.arriveTime }} น. · +{{ s.legKm | number: '1.1-1' }} กม. · {{ formatPhone(s.phone) }}
+                              </div>
+                            </li>
+                          }
+                        </ol>
+                        <div class="mt-3 grid grid-cols-3 gap-2 rounded-xl bg-white p-2.5 text-center text-xs">
+                          <div>
+                            <div class="font-semibold text-ink">฿{{ r.revenue | number }}</div>
+                            <div class="text-neutral-500">ยอดขาย</div>
+                          </div>
+                          <div>
+                            <div class="font-semibold text-ink">฿{{ r.riderCost | number: '1.0-2' }}</div>
+                            <div class="text-neutral-500">ค่าไรเดอร์</div>
+                          </div>
+                          <div>
+                            <div class="font-semibold" [class]="r.profit >= 0 ? 'text-emerald-700' : 'text-red-600'">฿{{ r.profit | number: '1.0-2' }}</div>
+                            <div class="text-neutral-500">กำไร</div>
+                          </div>
+                        </div>
+                        @if (r.jobCode) {
+                          <div class="mt-3 flex gap-2">
+                            <button class="btn btn-outline h-9 flex-1" (click)="copyJob(r.jobCode)">
+                              <span class="icon text-lg!">content_copy</span> คัดลอกลิงก์ใบงาน
+                            </button>
+                            <a class="btn btn-dark h-9" [routerLink]="['/rider', r.jobCode]">
+                              <span class="icon text-lg!">open_in_new</span> เปิด
+                            </a>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+        }
+      }
+    </div>
+  </aside>
+
+  <!-- แผนที่ขนาดใหญ่ -->
+  <section class="relative isolate order-1 h-[65vh] min-h-[420px] flex-1 lg:order-2 lg:h-auto">
+    <app-route-map
+      class="absolute! inset-0"
+      [markers]="markers()"
+      [routes]="mapRoutes()"
+      [activeRoute]="activeRider()"
+      (routeClick)="toggleRider($event)"
+    />
+
+    <!-- legend สีไรเดอร์ -->
+    @if (mapRoutes().length) {
+      <div class="pointer-events-none absolute inset-x-3 top-3 z-[500] flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+        <button
+          class="chip pointer-events-auto shrink-0 shadow-sm"
+          [class.chip-dark]="activeRider() === null"
+          (click)="activeRider.set(null); expanded.set(null)"
+        >
+          ทั้งหมด
+        </button>
+        @for (r of shown()!.routes; track r.riderNo) {
+          <button
+            class="chip pointer-events-auto shrink-0 shadow-sm"
+            [class.chip-dark]="activeRider() === r.riderNo"
+            (click)="toggleRider(r.riderNo)"
+          >
+            <span class="h-1.5 w-4 rounded-full" [style.background]="r.color"></span>
+            ไรเดอร์ {{ r.riderNo }}
+          </button>
+        }
+      </div>
+    }
+
+    @if (computing()) {
+      <div class="absolute inset-0 z-[600] grid place-items-center bg-white/60 backdrop-blur-[2px]">
+        <div class="flex items-center gap-3 rounded-full bg-ink px-6 py-3 text-sm text-white shadow-xl">
+          <span class="icon animate-spin text-brand-300">progress_activity</span> กำลังคำนวณเส้นทางที่ดีที่สุด...
+        </div>
+      </div>
+    }
+  </section>
+</div>

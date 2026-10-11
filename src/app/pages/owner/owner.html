@@ -1,0 +1,103 @@
+<div class="flex h-dvh flex-col bg-surface">
+  <!-- App bar -->
+  <header class="z-30 flex h-16 shrink-0 items-center gap-2 border-b border-neutral-200 bg-white px-2 sm:px-4">
+    <button class="btn-icon lg:hidden" (click)="drawerOpen.set(!drawerOpen())" aria-label="เมนู">
+      <span class="icon">menu</span>
+    </button>
+    <a routerLink="/owner" class="px-1"><app-brand-logo /></a>
+    <span class="ml-2 hidden rounded-md bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600 sm:inline">
+      เจ้าของร้าน
+    </span>
+
+    <div class="flex-1"></div>
+
+    <div
+      class="hidden h-10 items-center gap-2 rounded-full border px-4 text-sm md:flex"
+      [class]="countdown().before ? 'border-neutral-200 text-neutral-700' : 'border-brand-200 bg-brand-50 text-brand-800'"
+    >
+      <span class="icon text-brand-700">schedule</span>
+      <span class="font-medium text-ink">{{ clock() }}</span>
+      <span class="text-neutral-300">|</span>
+      <span>ออกส่ง {{ departTime }} · {{ countdown().text }}</span>
+    </div>
+
+    <a routerLink="/rider" class="btn-icon" title="หน้าไรเดอร์">
+      <span class="icon">two_wheeler</span>
+    </a>
+    <div class="ml-1 grid size-9 place-items-center rounded-full bg-ink text-sm font-semibold text-brand-200" title="เจ้าของร้าน">
+      ร้าน
+    </div>
+  </header>
+
+  <div class="relative flex min-h-0 flex-1">
+    <!-- scrim (mobile) -->
+    @if (drawerOpen()) {
+      <div class="fixed inset-0 z-40 bg-black/30 lg:hidden" (click)="drawerOpen.set(false)"></div>
+    }
+
+    <!-- Navigation drawer -->
+    <nav
+      class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white p-3 shadow-xl transition-transform duration-200 lg:static lg:z-auto lg:w-64 lg:translate-x-0 lg:bg-surface lg:shadow-none"
+      [class]="drawerOpen() ? 'translate-x-0' : '-translate-x-full'"
+    >
+      <div class="mb-3 flex h-12 items-center px-3 lg:hidden">
+        <app-brand-logo />
+      </div>
+
+      <a routerLink="/owner/routes" class="btn btn-primary btn-lg mb-4 w-full justify-start rounded-2xl shadow-md">
+        <span class="icon">alt_route</span> จัดเส้นทางตอนนี้
+      </a>
+
+      <ul class="flex flex-col gap-0.5">
+        @for (m of menus; track m.path) {
+          <li>
+            <a
+              [routerLink]="m.path"
+              routerLinkActive="bg-brand-100/70 text-brand-900! font-semibold"
+              #rla="routerLinkActive"
+              [routerLinkActiveOptions]="{ exact: m.exact }"
+              class="flex h-12 items-center gap-4 rounded-full px-5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-200/60"
+            >
+              <span class="icon" [class.icon-fill]="rla.isActive">{{ m.icon }}</span>
+              {{ m.label }}
+            </a>
+          </li>
+        }
+      </ul>
+
+      <div class="my-3 border-t border-neutral-200"></div>
+
+      <a
+        routerLink="/rider"
+        class="flex h-12 items-center gap-4 rounded-full px-5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-200/60"
+      >
+        <span class="icon">smartphone</span> หน้าจอไรเดอร์
+      </a>
+      <a
+        routerLink="/"
+        class="flex h-12 items-center gap-4 rounded-full px-5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-200/60"
+      >
+        <span class="icon">home</span> หน้าแรก
+      </a>
+
+      <div class="flex-1"></div>
+
+      @if (api.USE_MOCK) {
+        <div class="rounded-2xl border border-dashed border-neutral-300 p-4 text-xs leading-relaxed text-neutral-500">
+          <div class="mb-1 flex items-center gap-1.5 font-medium text-neutral-700">
+            <span class="icon text-base!">database</span> โหมดข้อมูลจำลอง
+          </div>
+          ข้อมูลเก็บใน LocalStorage ของเบราว์เซอร์นี้ (ตั้งค่า USE_MOCK ใน config/api.ts)
+          <button class="mt-2 font-medium text-brand-700 hover:underline" (click)="resetData()">
+            รีเซ็ตข้อมูลตัวอย่าง
+          </button>
+        </div>
+      }
+    </nav>
+
+    <!-- Page content -->
+    <main class="isolate min-w-0 flex-1 overflow-y-auto">
+      <router-outlet />
+    </main>
+  </div>
+</div>

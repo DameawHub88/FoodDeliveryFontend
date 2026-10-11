@@ -1,0 +1,16 @@
+<div class="flex min-h-dvh flex-col bg-surface">
+  <header class="sticky top-0 z-30 bg-ink">
+    <div class="mx-auto flex h-14 max-w-md items-center gap-2 px-3">
+      <a routerLink="/rider" class="px-1"><app-brand-logo [dark]="true" /></a>
+      <span class="ml-1 rounded-md bg-white/10 px-2 py-0.5 text-xs font-medium text-brand-100">ไรเดอร์</span>
+      <div class="flex-1"></div>
+      <a routerLink="/" class="grid size-10 place-items-center rounded-full text-neutral-300 hover:bg-white/10" title="หน้าแรก">
+        <span class="icon">home</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="mx-auto w-full max-w-md flex-1 px-4 pt-4 pb-10">
+    <router-outlet />
+  </main>
+</div>

@@ -1,3 +1,150 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import 'tailwindcss';
+
+/* ธีมสี ชมพูเข้ม / ขาว / ดำ สไตล์ Google (Material) */
+@theme {
+  --font-sans: 'Google Sans', 'Roboto', 'Noto Sans Thai', system-ui, sans-serif;
+
+  --color-brand-50: #fce4ec;
+  --color-brand-100: #f8bbd0;
+  --color-brand-200: #f48fb1;
+  --color-brand-300: #f06292;
+  --color-brand-400: #ec407a;
+  --color-brand-500: #e91e63;
+  --color-brand-600: #d81b60;
+  --color-brand-700: #c2185b;
+  --color-brand-800: #ad1457;
+  --color-brand-900: #880e4f;
+
+  --color-ink: #121212;
+  --color-surface: #f8f9fa;
+}
+
+@layer base {
+  html,
+  body {
+    @apply h-full bg-surface text-ink antialiased;
+  }
+
+  ::selection {
+    @apply bg-brand-100 text-brand-900;
+  }
+}
+
+@layer components {
+  /* ไอคอน Google Material Symbols */
+  .icon {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 1.25rem;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    user-select: none;
+  }
+  .icon-fill {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  /* ปุ่มทรงแคปซูลแบบ Google */
+  .btn {
+    @apply inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-medium whitespace-nowrap transition-all duration-150 select-none focus-visible:ring-4 focus-visible:ring-brand-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply bg-brand-700 text-white shadow-sm hover:bg-brand-800 hover:shadow-md active:bg-brand-900;
+  }
+  .btn-dark {
+    @apply bg-ink text-white shadow-sm hover:bg-neutral-800 hover:shadow-md;
+  }
+  .btn-outline {
+    @apply border border-neutral-300 bg-white text-brand-700 hover:border-brand-200 hover:bg-brand-50;
+  }
+  .btn-text {
+    @apply px-3 text-brand-700 hover:bg-brand-50;
+  }
+  .btn-tonal {
+    @apply bg-brand-50 text-brand-800 hover:bg-brand-100;
+  }
+  .btn-danger {
+    @apply border border-neutral-300 bg-white text-red-600 hover:border-red-200 hover:bg-red-50;
+  }
+  .btn-lg {
+    @apply h-12 px-7 text-base;
+  }
+  .btn-icon {
+    @apply inline-grid size-10 shrink-0 cursor-pointer place-items-center rounded-full text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-ink focus-visible:ring-4 focus-visible:ring-brand-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .card {
+    @apply rounded-3xl border border-neutral-200 bg-white;
+  }
+
+  /* ช่องกรอกแบบ outlined */
+  .field {
+    @apply flex flex-col gap-1.5;
+  }
+  .field-label {
+    @apply text-xs font-medium tracking-wide text-neutral-600;
+  }
+  .input {
+    @apply h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-base text-ink transition outline-none placeholder:text-neutral-400 hover:border-neutral-500 focus:border-brand-700 focus:ring-2 focus:ring-brand-100;
+  }
+  .input-error {
+    @apply border-red-500 focus:border-red-600 focus:ring-red-100;
+  }
+  .search {
+    @apply flex h-12 items-center gap-3 rounded-full bg-neutral-100 px-4 transition focus-within:bg-white focus-within:shadow-md focus-within:ring-1 focus-within:ring-neutral-200;
+  }
+  .search input {
+    @apply h-full w-full bg-transparent text-base outline-none placeholder:text-neutral-500;
+  }
+
+  .chip {
+    @apply inline-flex h-8 items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-700;
+  }
+  .chip-brand {
+    @apply border-brand-100 bg-brand-50 text-brand-800;
+  }
+  .chip-dark {
+    @apply border-ink bg-ink text-white;
+  }
+
+  .badge {
+    @apply inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-xs font-medium;
+  }
+}
+
+/* ปรับ Leaflet ให้เข้ากับธีม */
+.leaflet-container {
+  font-family: inherit;
+  background: #eef0f2;
+}
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+.leaflet-control-zoom a {
+  color: #121212 !important;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+}
+.leaflet-popup-content {
+  margin: 12px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.map-pin {
+  background: transparent;
+  border: none;
+}

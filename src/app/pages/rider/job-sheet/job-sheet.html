@@ -1,0 +1,157 @@
+@if (loading()) {
+  <div class="space-y-3">
+    <div class="h-44 animate-pulse rounded-3xl bg-neutral-200"></div>
+    <div class="h-12 animate-pulse rounded-full bg-neutral-200"></div>
+    <div class="h-28 animate-pulse rounded-3xl bg-neutral-200"></div>
+    <div class="h-28 animate-pulse rounded-3xl bg-neutral-200"></div>
+  </div>
+} @else if (!route()) {
+  <div class="pt-10 text-center">
+    <div class="mx-auto grid size-16 place-items-center rounded-full bg-red-50 text-red-600">
+      <span class="icon text-4xl!">search_off</span>
+    </div>
+    <h1 class="mt-5 text-xl font-medium text-ink">ไม่พบใบงาน #{{ code() }}</h1>
+    <p class="mt-2 text-sm text-neutral-500">ใบงานอาจถูกยกเลิก หรือเลขไม่ถูกต้อง กรุณาติดต่อร้าน</p>
+    <a routerLink="/rider" class="btn btn-primary mt-6"><span class="icon">arrow_back</span> กรอกเลขใบงานใหม่</a>
+  </div>
+} @else {
+  @let r = route()!;
+
+  <!-- สรุปใบงาน -->
+  <section class="relative overflow-clip rounded-3xl bg-ink p-5 text-white">
+    <div class="pointer-events-none absolute -top-16 -right-12 size-48 rounded-full blur-3xl" [style.background]="r.color + '66'"></div>
+    <div class="relative flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="grid size-8 place-items-center rounded-full text-sm font-bold" [style.background]="r.color">{{ r.riderNo }}</span>
+        <div>
+          <div class="text-sm font-medium">ใบงาน #{{ job()!.jobCode }}</div>
+          <div class="text-xs text-neutral-400">{{ dateText() }}</div>
+        </div>
+      </div>
+      <a routerLink="/rider" class="grid size-9 place-items-center rounded-full text-neutral-400 hover:bg-white/10" title="เปลี่ยนใบงาน">
+        <span class="icon">swap_horiz</span>
+      </a>
+    </div>
+
+    <div class="relative mt-5 flex items-end gap-3">
+      <div>
+        <div class="text-xs text-neutral-400">หยิบข้าวกล่องไปทั้งหมด</div>
+        <div class="text-5xl leading-none font-semibold text-brand-300">
+          {{ r.totalBoxes }}<span class="ml-1.5 text-xl font-normal text-white">กล่อง</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative mt-5 grid grid-cols-3 gap-2 text-center">
+      <div class="rounded-2xl bg-white/10 px-2 py-2.5">
+        <div class="text-lg font-semibold">{{ r.stops.length }}</div>
+        <div class="text-[11px] text-neutral-400">จุดส่ง</div>
+      </div>
+      <div class="rounded-2xl bg-white/10 px-2 py-2.5">
+        <div class="text-lg font-semibold">{{ r.distanceKm | number: '1.1-1' }}</div>
+        <div class="text-[11px] text-neutral-400">กม.</div>
+      </div>
+      <div class="rounded-2xl bg-white/10 px-2 py-2.5">
+        <div class="text-lg font-semibold">~{{ r.durationMin }}</div>
+        <div class="text-[11px] text-neutral-400">นาที</div>
+      </div>
+    </div>
+
+    <div class="relative mt-4 flex items-center gap-2 rounded-2xl bg-brand-700/90 px-4 py-2.5 text-sm">
+      <span class="icon">timer</span>
+      <span>ออกจากร้าน {{ job()!.departTime }} · ส่งให้ครบก่อน <b>{{ deadline() }} น.</b></span>
+    </div>
+  </section>
+
+  <a [href]="navigateAllUrl()" target="_blank" rel="noopener" class="btn btn-primary btn-lg mt-4 w-full">
+    <span class="icon icon-fill">navigation</span> เปิดนำทางทั้งเส้นทาง (Google Maps)
+  </a>
+
+  <!-- ความคืบหน้า -->
+  <div class="mt-5 flex items-center justify-between text-sm">
+    <span class="font-medium text-ink">ลำดับการส่ง</span>
+    <span class="text-neutral-500">ส่งแล้ว {{ deliveredCount() }}/{{ r.stops.length }}</span>
+  </div>
+  <div class="mt-2 h-1.5 overflow-clip rounded-full bg-neutral-200">
+    <div class="h-full rounded-full bg-brand-700 transition-all" [style.width.%]="(deliveredCount() / r.stops.length) * 100"></div>
+  </div>
+
+  <!-- ขั้นตอน -->
+  <ol class="mt-4 space-y-2">
+    <li class="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
+      <span class="grid size-10 shrink-0 place-items-center rounded-full bg-ink text-brand-200">
+        <span class="icon icon-fill">storefront</span>
+      </span>
+      <div class="flex-1">
+        <div class="text-sm font-medium text-ink">เริ่มที่ร้าน · {{ job()!.departTime }} น.</div>
+        <div class="text-xs text-neutral-500">หยิบข้าวกล่อง {{ r.totalBoxes }} กล่อง ตรวจให้ครบก่อนออก</div>
+      </div>
+    </li>
+
+    @for (s of r.stops; track s.orderId) {
+      <li class="flex justify-center text-neutral-300"><span class="icon">south</span></li>
+      <li class="overflow-clip rounded-3xl border bg-white transition" [class]="s.delivered ? 'border-neutral-200 opacity-70' : 'border-neutral-300 shadow-sm'">
+        <div class="flex gap-3 p-4">
+          <span
+            class="grid size-10 shrink-0 place-items-center rounded-full text-base font-bold text-white"
+            [style.background]="s.delivered ? '#9e9e9e' : r.color"
+          >
+            @if (s.delivered) {
+              <span class="icon">check</span>
+            } @else {
+              {{ s.seq }}
+            }
+          </span>
+          <div class="min-w-0 flex-1">
+            <div class="text-xs font-medium" [style.color]="r.color">จุดที่ {{ s.seq }}</div>
+            <div class="text-lg leading-snug font-semibold text-ink" [class.line-through]="s.delivered">คุณ{{ s.customerName }}</div>
+            <div class="mt-0.5 text-sm text-neutral-600">{{ s.address }}</div>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <span class="badge bg-brand-50 text-brand-800"><span class="icon text-sm!">bento</span> {{ s.quantity }} กล่อง</span>
+              <span class="badge bg-neutral-100 text-neutral-700"><span class="icon text-sm!">schedule</span> ถึง ~{{ s.arriveTime }}</span>
+              <span class="badge bg-neutral-100 text-neutral-700">+{{ s.legKm | number: '1.1-1' }} กม.</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 border-t border-neutral-100 text-sm font-medium">
+          <a [href]="pointUrl(s)" target="_blank" rel="noopener" class="flex h-12 items-center justify-center gap-1.5 text-brand-700 hover:bg-brand-50">
+            <span class="icon">directions</span> นำทาง
+          </a>
+          <a [href]="'tel:' + s.phone" class="flex h-12 items-center justify-center gap-1.5 border-x border-neutral-100 text-ink hover:bg-neutral-50">
+            <span class="icon">call</span> โทร
+          </a>
+          <button
+            class="flex h-12 items-center justify-center gap-1.5 transition"
+            [class]="s.delivered ? 'bg-emerald-50 text-emerald-700' : 'text-neutral-700 hover:bg-neutral-50'"
+            (click)="toggleDelivered(s)"
+          >
+            <span class="icon" [class.icon-fill]="s.delivered">{{ s.delivered ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            {{ s.delivered ? 'ส่งแล้ว' : 'ส่งเสร็จ' }}
+          </button>
+        </div>
+      </li>
+    }
+
+    <li class="flex justify-center text-neutral-300"><span class="icon">south</span></li>
+    <li
+      class="flex items-center gap-3 rounded-2xl p-4"
+      [class]="allDone() ? 'bg-emerald-600 text-white' : 'border border-dashed border-neutral-300 bg-white'"
+    >
+      <span class="grid size-10 shrink-0 place-items-center rounded-full" [class]="allDone() ? 'bg-white/20' : 'bg-neutral-100 text-neutral-500'">
+        <span class="icon icon-fill">{{ allDone() ? 'celebration' : 'flag' }}</span>
+      </span>
+      <div class="flex-1">
+        <div class="text-sm font-medium" [class.text-ink]="!allDone()">{{ allDone() ? 'ส่งครบทุกจุดแล้ว ขอบคุณครับ!' : 'จบงาน' }}</div>
+        <div class="text-xs" [class]="allDone() ? 'text-emerald-50' : 'text-neutral-500'">ส่งครบแล้วขับกลับร้านได้เลย</div>
+      </div>
+    </li>
+  </ol>
+
+  <!-- แผนที่ -->
+  <section class="mt-6 overflow-clip rounded-3xl border border-neutral-200 bg-white">
+    <div class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-ink">
+      <span class="icon text-brand-700">map</span> แผนที่เส้นทาง
+    </div>
+    <app-route-map class="h-72" [markers]="markers()" [routes]="mapRoutes()" />
+  </section>
+}

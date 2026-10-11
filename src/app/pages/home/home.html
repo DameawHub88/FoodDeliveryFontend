@@ -1,0 +1,71 @@
+<div class="flex min-h-full flex-col bg-white">
+  <!-- top bar -->
+  <header class="flex items-center justify-end gap-2 px-4 py-3 sm:px-6">
+    <a routerLink="/rider" class="btn btn-text">
+      <span class="icon">two_wheeler</span> ไรเดอร์
+    </a>
+    <a routerLink="/owner" class="btn btn-primary">
+      <span class="icon">storefront</span> หน้าร้าน
+    </a>
+  </header>
+
+  <main class="flex flex-1 flex-col items-center justify-center px-4 pt-6 pb-16">
+    <app-brand-logo size="lg" />
+
+    <p class="mt-8 max-w-xl text-center text-lg leading-relaxed text-neutral-600">
+      กดปุ่มเดียวตอน {{ rules.departTime }} ระบบแบ่งงานให้ไรเดอร์และจัดเส้นทางที่สั้นที่สุดให้ทันที
+      <span class="font-medium text-ink">ส่งถึงมือลูกค้าทุกคนก่อน {{ deadline }} น.</span>
+    </p>
+
+    <div class="mt-10 grid w-full max-w-3xl gap-4 sm:grid-cols-2">
+      <!-- owner -->
+      <a
+        routerLink="/owner"
+        class="group card relative overflow-clip p-6 transition hover:border-brand-200 hover:shadow-lg"
+      >
+        <div class="grid size-12 place-items-center rounded-2xl bg-brand-50 text-brand-700">
+          <span class="icon icon-fill text-[26px]!">storefront</span>
+        </div>
+        <h2 class="mt-5 text-xl font-semibold text-ink">สำหรับเจ้าของร้าน</h2>
+        <p class="mt-1.5 text-sm leading-relaxed text-neutral-600">
+          จัดการลูกค้า รับออเดอร์ จัดเส้นทางบนแผนที่ และดูกำไร-ขาดทุนก่อนปล่อยไรเดอร์
+        </p>
+        <div class="mt-6 inline-flex items-center gap-1 text-sm font-medium text-brand-700">
+          เข้าสู่หน้าร้าน
+          <span class="icon transition group-hover:translate-x-1">arrow_forward</span>
+        </div>
+      </a>
+
+      <!-- rider -->
+      <a
+        routerLink="/rider"
+        class="group relative overflow-clip rounded-3xl bg-ink p-6 text-white transition hover:shadow-lg hover:shadow-brand-900/20"
+      >
+        <div class="absolute -top-10 -right-10 size-40 rounded-full bg-brand-700/30 blur-2xl"></div>
+        <div class="relative grid size-12 place-items-center rounded-2xl bg-white/10 text-brand-200">
+          <span class="icon icon-fill text-[26px]!">two_wheeler</span>
+        </div>
+        <h2 class="relative mt-5 text-xl font-semibold">สำหรับไรเดอร์</h2>
+        <p class="relative mt-1.5 text-sm leading-relaxed text-neutral-300">
+          กรอกเลขใบงานเพื่อดูว่าต้องหยิบกี่กล่อง ส่งจุดไหนก่อน-หลัง พร้อมปุ่มเปิด Google Maps
+        </p>
+        <div class="relative mt-6 inline-flex items-center gap-1 text-sm font-medium text-brand-200">
+          เปิดใบงาน
+          <span class="icon transition group-hover:translate-x-1">arrow_forward</span>
+        </div>
+      </a>
+    </div>
+
+    <div class="mt-10 flex max-w-3xl flex-wrap justify-center gap-2">
+      <span class="chip"><span class="icon text-brand-700">schedule</span> ออกส่ง {{ rules.departTime }} น.</span>
+      <span class="chip"><span class="icon text-brand-700">timer</span> ถึงมือลูกค้าภายใน {{ deadline }} น.</span>
+      <span class="chip"><span class="icon text-brand-700">radar</span> ลูกค้าในรัศมี {{ rules.serviceRadiusKm }} กม.</span>
+      <span class="chip"><span class="icon text-brand-700">package_2</span> ไรเดอร์ละไม่เกิน {{ rules.maxOrdersPerRider }} ออเดอร์</span>
+      <span class="chip"><span class="icon text-brand-700">payments</span> กล่องละ {{ pricing.pricePerBox }} บาท</span>
+    </div>
+  </main>
+
+  <footer class="border-t border-neutral-200 bg-surface px-6 py-4 text-center text-xs text-neutral-500">
+    {{ shop.name }} · {{ shop.address }}
+  </footer>
+</div>

@@ -1,0 +1,23 @@
+<div class="flex items-center" [class]="size() === 'lg' ? 'gap-4' : 'gap-2.5'">
+  <div
+    class="grid shrink-0 place-items-center bg-brand-700 text-white shadow-sm"
+    [class]="size() === 'lg' ? 'size-16 rounded-[22px]' : 'size-9 rounded-xl'"
+  >
+    <span class="icon icon-fill" [style.font-size.px]="size() === 'lg' ? 36 : 22">delivery_dining</span>
+  </div>
+  @if (showText()) {
+    <div class="leading-tight">
+      <div
+        class="font-semibold tracking-tight"
+        [class]="(size() === 'lg' ? 'text-3xl sm:text-4xl ' : 'text-lg ') + (dark() ? 'text-white' : 'text-ink')"
+      >
+        ส่งด่วน<span [class]="dark() ? 'text-brand-300' : 'text-brand-700'">มื้อเที่ยง</span>
+      </div>
+      @if (size() === 'lg') {
+        <div class="mt-1 text-sm" [class]="dark() ? 'text-neutral-400' : 'text-neutral-500'">
+          ระบบจัดเส้นทางและแบ่งงานไรเดอร์อัจฉริยะ
+        </div>
+      }
+    </div>
+  }
+</div>

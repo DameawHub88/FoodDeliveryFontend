@@ -1,0 +1,55 @@
+<div class="pt-6 text-center">
+  <div class="mx-auto grid size-16 place-items-center rounded-[22px] bg-brand-50 text-brand-700">
+    <span class="icon icon-fill text-4xl!">assignment</span>
+  </div>
+  <h1 class="mt-5 text-2xl font-normal text-ink">ดูใบงานของคุณ</h1>
+  <p class="mt-1 text-sm text-neutral-500">กรอกเลขใบงาน 6 หลักที่ได้รับจากร้าน</p>
+</div>
+
+<form class="mt-8" (ngSubmit)="open()">
+  <input
+    class="h-16 w-full rounded-2xl border-2 bg-white text-center font-mono text-3xl tracking-[0.4em] text-ink transition outline-none placeholder:tracking-[0.3em] placeholder:text-neutral-300 focus:border-brand-700 focus:ring-4 focus:ring-brand-100"
+    [class]="error() ? 'border-red-500' : 'border-neutral-300'"
+    name="code"
+    inputmode="numeric"
+    autocomplete="off"
+    maxlength="6"
+    placeholder="••••••"
+    [ngModel]="code()"
+    (ngModelChange)="onInput($event)"
+    autofocus
+  />
+  @if (error()) {
+    <p class="mt-2 flex items-center justify-center gap-1 text-sm text-red-600">
+      <span class="icon text-lg!">error</span> {{ error() }}
+    </p>
+  }
+  <button type="submit" class="btn btn-primary btn-lg mt-5 w-full" [disabled]="checking() || code().length !== 6">
+    <span class="icon" [class.animate-spin]="checking()">{{ checking() ? 'progress_activity' : 'arrow_forward' }}</span>
+    ดูใบงาน
+  </button>
+</form>
+
+@if (recent().length) {
+  <div class="mt-8">
+    <h2 class="text-xs font-medium text-neutral-500">ใบงานที่เคยเปิด</h2>
+    <div class="mt-2 flex flex-wrap gap-2">
+      @for (c of recent(); track c) {
+        <button class="chip font-mono hover:bg-neutral-50" (click)="open(c)">
+          <span class="icon text-base! text-brand-700">history</span>#{{ c }}
+        </button>
+      }
+    </div>
+  </div>
+}
+
+<div class="mt-10 rounded-3xl bg-ink p-5 text-sm text-neutral-300">
+  <div class="flex items-center gap-2 font-medium text-white">
+    <span class="icon text-brand-300">info</span> เงื่อนไขการส่งวันนี้
+  </div>
+  <ul class="mt-3 space-y-2">
+    <li class="flex gap-2"><span class="icon text-lg! text-brand-300">schedule</span> รับของที่ร้าน {{ rules.departTime }} น.</li>
+    <li class="flex gap-2"><span class="icon text-lg! text-brand-300">timer</span> ส่งถึงมือลูกค้าทุกจุดก่อน {{ deadline }} น.</li>
+    <li class="flex gap-2"><span class="icon text-lg! text-brand-300">format_list_numbered</span> ส่งตามลำดับจุดในใบงาน</li>
+  </ul>
+</div>

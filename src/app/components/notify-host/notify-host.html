@@ -1,0 +1,46 @@
+<!-- Snackbar -->
+@if (notify.toast(); as t) {
+  <div
+    class="fixed bottom-6 left-1/2 z-[2000] flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-xl bg-ink px-4 py-3.5 text-sm text-white shadow-2xl sm:left-6 sm:translate-x-0"
+    role="status"
+  >
+    <span class="icon icon-fill" [class]="t.tone === 'error' ? 'text-red-400' : 'text-brand-200'">
+      {{ t.tone === 'error' ? 'error' : 'check_circle' }}
+    </span>
+    <span class="flex-1">{{ t.text }}</span>
+    <button class="text-sm font-medium text-brand-200 hover:text-brand-100" (click)="notify.toast.set(null)">
+      ปิด
+    </button>
+  </div>
+}
+
+<!-- Confirm dialog -->
+@if (notify.dialog(); as d) {
+  <div class="fixed inset-0 z-[2100] grid place-items-center bg-black/40 p-4" (click)="notify.close(false)">
+    <div
+      class="w-full max-w-sm rounded-[28px] bg-white p-6 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div
+        class="mx-auto mb-4 grid size-12 place-items-center rounded-full"
+        [class]="d.danger ? 'bg-red-50 text-red-600' : 'bg-brand-50 text-brand-700'"
+      >
+        <span class="icon">{{ d.danger ? 'delete' : 'help' }}</span>
+      </div>
+      <h2 class="text-center text-xl font-medium text-ink">{{ d.title }}</h2>
+      <p class="mt-3 text-center text-sm leading-relaxed text-neutral-600">{{ d.message }}</p>
+      <div class="mt-6 flex justify-end gap-2">
+        <button class="btn btn-text" (click)="notify.close(false)">ยกเลิก</button>
+        <button
+          class="btn"
+          [class]="d.danger ? 'bg-red-600 text-white hover:bg-red-700' : 'btn-primary'"
+          (click)="notify.close(true)"
+        >
+          {{ d.confirmText ?? 'ตกลง' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

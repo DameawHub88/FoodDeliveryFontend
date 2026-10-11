@@ -1,0 +1,236 @@
+<div class="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+  <div class="mb-6">
+    <h1 class="text-2xl font-normal text-ink sm:text-[28px]">สวัสดีครับ เจ้าของร้าน</h1>
+    <p class="mt-1 text-sm text-neutral-500">{{ todayText }}</p>
+  </div>
+
+  <div class="grid gap-4 lg:grid-cols-3">
+    <!-- Hero -->
+    <section class="relative overflow-clip rounded-3xl bg-ink p-6 text-white sm:p-8 lg:col-span-2">
+      <div class="pointer-events-none absolute -top-24 -right-16 size-72 rounded-full bg-brand-700/40 blur-3xl"></div>
+      <div class="pointer-events-none absolute -bottom-28 left-1/3 size-64 rounded-full bg-brand-500/20 blur-3xl"></div>
+
+      <div class="relative">
+        <span class="inline-flex h-7 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-medium text-brand-100">
+          <span class="icon text-base!">schedule</span>
+          ออกส่ง {{ rules.departTime }} · ถึงมือลูกค้าก่อน {{ deadline }}
+        </span>
+
+        @if (loading()) {
+          <div class="mt-5 h-9 w-2/3 animate-pulse rounded-lg bg-white/10"></div>
+          <div class="mt-3 h-5 w-1/2 animate-pulse rounded bg-white/10"></div>
+        } @else if (orders().length === 0) {
+          <h2 class="mt-5 text-2xl font-semibold sm:text-3xl">ยังไม่มีออเดอร์วันนี้</h2>
+          <p class="mt-2 max-w-lg text-sm leading-relaxed text-neutral-300">
+            รับออเดอร์จากหน้า “ออเดอร์” หรือกดจำลองออเดอร์ 20–30 รายการ เพื่อทดสอบว่าระบบจัดเส้นทางได้ถูกต้อง
+          </p>
+        } @else if (plan() && !planStale()) {
+          <h2 class="mt-5 text-2xl font-semibold sm:text-3xl">
+            แผนพร้อมแล้ว · ไรเดอร์ {{ plan()!.summary.riders }} คน
+          </h2>
+          <p class="mt-2 max-w-lg text-sm leading-relaxed text-neutral-300">
+            ส่งครบ {{ plan()!.summary.orders }} ออเดอร์ เสร็จประมาณ {{ plan()!.summary.finishTime }} น.
+            @if (plan()!.summary.lateCount === 0) {
+              <span class="text-brand-200">ทันเวลาทุกจุด</span>
+            }
+          </p>
+        } @else {
+          <h2 class="mt-5 text-2xl font-semibold sm:text-3xl">
+            มี {{ orders().length }} ออเดอร์ รอจัดเส้นทาง
+          </h2>
+          <p class="mt-2 max-w-lg text-sm leading-relaxed text-neutral-300">
+            @if (planStale()) {
+              ออเดอร์มีการเปลี่ยนแปลงหลังจากยืนยันแผนล่าสุด กรุณาจัดเส้นทางใหม่อีกครั้ง
+            } @else {
+              กดปุ่มเดียว ระบบจะแบ่งงานให้ไรเดอร์ เรียงจุดส่งให้สั้นที่สุด และคำนวณกำไร-ขาดทุนให้ทันที
+            }
+          </p>
+        }
+
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a routerLink="/owner/routes" class="btn btn-lg bg-brand-600 text-white shadow-lg shadow-brand-900/40 hover:bg-brand-500">
+            <span class="icon">alt_route</span> จัดเส้นทาง
+          </a>
+          <button
+            class="btn btn-lg border border-white/25 text-white hover:bg-white/10"
+            (click)="simulate()"
+            [disabled]="simulating()"
+          >
+            <span class="icon" [class.animate-spin]="simulating()">{{ simulating() ? 'progress_activity' : 'casino' }}</span>
+            จำลองออเดอร์ 20–30 รายการ
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Profit -->
+    <section class="card flex flex-col p-6">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-medium text-ink">ประมาณการวันนี้</h3>
+        <span class="icon text-neutral-400">monitoring</span>
+      </div>
+      <dl class="mt-4 space-y-3 text-sm">
+        <div class="flex justify-between">
+          <dt class="text-neutral-600">ยอดขาย ({{ boxes() }} × {{ pricing.pricePerBox }})</dt>
+          <dd class="font-medium">฿{{ revenue() | number }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-neutral-600">ต้นทุนอาหาร</dt>
+          <dd class="font-medium">−฿{{ boxes() * pricing.costPerBox | number }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-neutral-600">ค่าไรเดอร์</dt>
+          <dd class="font-medium">
+            @if (plan() && !planStale()) {
+              −฿{{ plan()!.summary.riderCost | number: '1.0-2' }}
+            } @else {
+              <span class="text-neutral-400">รอจัดเส้นทาง</span>
+            }
+          </dd>
+        </div>
+      </dl>
+      <div class="mt-auto pt-5">
+        <div class="border-t border-neutral-200 pt-4">
+          @if (plan() && !planStale()) {
+            <div class="text-xs text-neutral-500">กำไรสุทธิ</div>
+            <div
+              class="mt-1 text-3xl font-semibold"
+              [class]="plan()!.summary.profit >= 0 ? 'text-emerald-700' : 'text-red-600'"
+            >
+              ฿{{ plan()!.summary.profit | number: '1.0-2' }}
+            </div>
+          } @else {
+            <div class="text-xs text-neutral-500">กำไรก่อนหักค่าไรเดอร์</div>
+            <div class="mt-1 text-3xl font-semibold text-ink">฿{{ grossMargin() | number }}</div>
+          }
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- KPI tiles -->
+  <div class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <a routerLink="/owner/orders" class="card group p-5 transition hover:shadow-md">
+      <div class="flex items-center gap-2 text-sm text-neutral-600">
+        <span class="icon text-brand-700">receipt_long</span> ออเดอร์วันนี้
+      </div>
+      <div class="mt-3 text-3xl font-semibold text-ink">{{ orders().length }}</div>
+      <div class="mt-1 text-xs text-neutral-500">ปกติ 20–30 รายการ/วัน</div>
+    </a>
+    <div class="card p-5">
+      <div class="flex items-center gap-2 text-sm text-neutral-600">
+        <span class="icon text-brand-700">bento</span> ข้าวกล่องที่ต้องส่ง
+      </div>
+      <div class="mt-3 text-3xl font-semibold text-ink">{{ boxes() }}</div>
+      <div class="mt-1 text-xs text-neutral-500">ออเดอร์ละไม่เกิน {{ rules.maxBoxesPerOrder }} กล่อง</div>
+    </div>
+    <div class="card p-5">
+      <div class="flex items-center gap-2 text-sm text-neutral-600">
+        <span class="icon text-brand-700">two_wheeler</span> ไรเดอร์
+      </div>
+      <div class="mt-3 text-3xl font-semibold text-ink">
+        @if (plan() && !planStale()) {
+          {{ plan()!.summary.riders }}
+        } @else {
+          <span class="text-neutral-300">—</span>
+        }
+      </div>
+      <div class="mt-1 text-xs text-neutral-500">คนละไม่เกิน {{ rules.maxOrdersPerRider }} ออเดอร์</div>
+    </div>
+    <a routerLink="/owner/customers" class="card group p-5 transition hover:shadow-md">
+      <div class="flex items-center gap-2 text-sm text-neutral-600">
+        <span class="icon text-brand-700">group</span> ลูกค้าในระบบ
+      </div>
+      <div class="mt-3 text-3xl font-semibold text-ink">{{ customers().length }}</div>
+      <div class="mt-1 text-xs text-neutral-500">ในรัศมี {{ rules.serviceRadiusKm }} กม. จากร้าน</div>
+    </a>
+  </div>
+
+  <div class="mt-4 grid gap-4 lg:grid-cols-5">
+    <!-- Map -->
+    <section class="card overflow-clip lg:col-span-3">
+      <div class="flex items-center justify-between px-5 pt-4 pb-3">
+        <div>
+          <h3 class="text-base font-medium text-ink">
+            {{ plan() && !planStale() ? 'เส้นทางที่ยืนยันแล้ว' : 'ตำแหน่งออเดอร์วันนี้' }}
+          </h3>
+          <p class="text-xs text-neutral-500">ตัวเลขบนหมุด = {{ plan() && !planStale() ? 'ลำดับจุดส่ง' : 'จำนวนกล่อง' }}</p>
+        </div>
+        <a routerLink="/owner/routes" class="btn btn-text">ดูแผนที่ใหญ่</a>
+      </div>
+      <app-route-map class="h-[380px]" [markers]="markers()" [routes]="mapRoutes()" />
+    </section>
+
+    <!-- Jobs / steps -->
+    <section class="card p-5 lg:col-span-2">
+      @if (plan() && !planStale()) {
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-medium text-ink">ใบงานไรเดอร์วันนี้</h3>
+          <span class="badge bg-emerald-50 text-emerald-700"><span class="icon text-sm!">verified</span> ยืนยันแล้ว</span>
+        </div>
+        <ul class="mt-3 max-h-[340px] divide-y divide-neutral-100 overflow-y-auto">
+          @for (r of plan()!.routes; track r.riderNo) {
+            <li class="flex items-center gap-3 py-2.5">
+              <span class="grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold text-white" [style.background]="r.color">
+                {{ r.riderNo }}
+              </span>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-ink">ใบงาน #{{ r.jobCode }}</div>
+                <div class="truncate text-xs text-neutral-500">
+                  {{ r.stops.length }} จุด · {{ r.totalBoxes }} กล่อง · {{ r.distanceKm }} กม.
+                </div>
+              </div>
+              <a [routerLink]="['/rider', r.jobCode]" class="btn-icon" title="เปิดใบงาน">
+                <span class="icon">open_in_new</span>
+              </a>
+            </li>
+          }
+        </ul>
+      } @else {
+        <h3 class="text-base font-medium text-ink">ขั้นตอนวันนี้</h3>
+        <ol class="mt-4 space-y-1">
+          <li>
+            <a routerLink="/owner/customers" class="flex items-center gap-4 rounded-2xl p-3 transition hover:bg-neutral-50">
+              <span class="grid size-10 place-items-center rounded-full bg-brand-50 text-brand-700"><span class="icon">group</span></span>
+              <div class="flex-1">
+                <div class="text-sm font-medium text-ink">1. ข้อมูลลูกค้า</div>
+                <div class="text-xs text-neutral-500">ชื่อ เบอร์โทร และพิกัดบ้านบนแผนที่</div>
+              </div>
+              <span class="icon" [class]="customers().length ? 'icon-fill text-emerald-600' : 'text-neutral-300'">{{ customers().length ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            </a>
+          </li>
+          <li>
+            <a routerLink="/owner/orders" class="flex items-center gap-4 rounded-2xl p-3 transition hover:bg-neutral-50">
+              <span class="grid size-10 place-items-center rounded-full bg-brand-50 text-brand-700"><span class="icon">receipt_long</span></span>
+              <div class="flex-1">
+                <div class="text-sm font-medium text-ink">2. รับออเดอร์ก่อน {{ rules.departTime }}</div>
+                <div class="text-xs text-neutral-500">ค้นหาลูกค้าเก่าด้วยเบอร์โทรได้ทันที</div>
+              </div>
+              <span class="icon" [class]="orders().length ? 'icon-fill text-emerald-600' : 'text-neutral-300'">{{ orders().length ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            </a>
+          </li>
+          <li>
+            <a routerLink="/owner/routes" class="flex items-center gap-4 rounded-2xl p-3 transition hover:bg-neutral-50">
+              <span class="grid size-10 place-items-center rounded-full bg-brand-50 text-brand-700"><span class="icon">alt_route</span></span>
+              <div class="flex-1">
+                <div class="text-sm font-medium text-ink">3. กดจัดเส้นทาง แล้วยืนยันแผน</div>
+                <div class="text-xs text-neutral-500">ดูกำไร-ขาดทุน เวลาที่ใช้ และคำนวณใหม่ได้</div>
+              </div>
+              <span class="icon text-neutral-300">radio_button_unchecked</span>
+            </a>
+          </li>
+          <li>
+            <a routerLink="/rider" class="flex items-center gap-4 rounded-2xl p-3 transition hover:bg-neutral-50">
+              <span class="grid size-10 place-items-center rounded-full bg-ink text-brand-200"><span class="icon">two_wheeler</span></span>
+              <div class="flex-1">
+                <div class="text-sm font-medium text-ink">4. ส่งเลขใบงานให้ไรเดอร์</div>
+                <div class="text-xs text-neutral-500">ไรเดอร์เปิดดูลำดับจุดส่งผ่านมือถือ</div>
+              </div>
+              <span class="icon text-neutral-300">radio_button_unchecked</span>
+            </a>
+          </li>
+        </ol>
+      }
+    </section>
+  </div>
+</div>

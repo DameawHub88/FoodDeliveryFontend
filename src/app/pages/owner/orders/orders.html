@@ -1,0 +1,241 @@
+<div class="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+  <!-- Header -->
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-normal text-ink sm:text-[28px]">ออเดอร์วันนี้</h1>
+      <p class="mt-1 text-sm text-neutral-500">{{ todayText }} · รับออเดอร์ก่อน {{ rules.departTime }} น.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button class="btn btn-outline" (click)="simulate()" [disabled]="busy()">
+        <span class="icon">casino</span> จำลองออเดอร์ 20–30
+      </button>
+      @if (orders().length) {
+        <button class="btn btn-danger" (click)="clearAll()" [disabled]="busy()">
+          <span class="icon">delete_sweep</span> ล้างทั้งหมด
+        </button>
+      }
+      <a routerLink="/owner/routes" class="btn btn-primary">
+        <span class="icon">alt_route</span> ไปจัดเส้นทาง
+      </a>
+    </div>
+  </div>
+
+  <div class="mt-4 flex flex-wrap gap-2">
+    <span class="chip chip-dark"><span class="icon text-base!">receipt_long</span> {{ orders().length }} ออเดอร์</span>
+    <span class="chip chip-brand"><span class="icon text-base!">bento</span> {{ boxes() }} กล่อง</span>
+    <span class="chip"><span class="icon text-base!">payments</span> ยอดขาย ฿{{ boxes() * pricing.pricePerBox | number }}</span>
+  </div>
+
+  <div class="mt-6 grid gap-4 lg:grid-cols-[380px_minmax(0,1fr)]">
+    <!-- ฟอร์มรับออเดอร์ -->
+    <section class="card h-fit p-5 lg:sticky lg:top-0">
+      <h2 class="flex items-center gap-2 text-lg font-medium text-ink">
+        <span class="grid size-9 place-items-center rounded-full bg-brand-50 text-brand-700"><span class="icon">add_shopping_cart</span></span>
+        รับออเดอร์ใหม่
+      </h2>
+
+      <div class="mt-5 space-y-4">
+        <div class="field">
+          <label class="field-label" for="o-phone">เบอร์โทรลูกค้า</label>
+          <div class="flex gap-2">
+            <input
+              id="o-phone"
+              class="input"
+              inputmode="tel"
+              placeholder="ลูกค้าเก่า ใส่เบอร์โทรก็เจอ"
+              [ngModel]="phone()"
+              (ngModelChange)="onPhoneChange($event)"
+              (keyup.enter)="searchPhone()"
+            />
+            <button class="btn btn-tonal h-12 w-12 shrink-0 px-0" (click)="searchPhone()" aria-label="ค้นหา">
+              <span class="icon" [class.animate-spin]="lookup() === 'searching'">{{ lookup() === 'searching' ? 'progress_activity' : 'search' }}</span>
+            </button>
+          </div>
+        </div>
+
+        @if (lookup() === 'found' && found(); as c) {
+          <div class="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+            <div class="flex items-start gap-3">
+              <div class="grid size-10 shrink-0 place-items-center rounded-full bg-ink text-sm font-semibold text-brand-100">
+                {{ c.name.charAt(0) }}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-ink">{{ c.name }}</span>
+                  <span class="badge bg-emerald-100 text-emerald-800">ลูกค้าเก่า</span>
+                </div>
+                <div class="mt-0.5 text-xs text-neutral-600">{{ c.address }}</div>
+                <div class="mt-0.5 text-xs text-neutral-500">ห่างจากร้าน {{ distance(c) | number: '1.1-1' }} กม.</div>
+              </div>
+            </div>
+            @if (foundTodayBoxes()) {
+              <div class="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800">
+                <span class="icon text-base!">info</span>
+                ลูกค้าคนนี้สั่งแล้ววันนี้ {{ foundTodayBoxes() }} กล่อง (แก้ไขจำนวนในรายการได้)
+              </div>
+            }
+          </div>
+        }
+
+        @if (lookup() === 'new') {
+          <div class="space-y-3 rounded-2xl border border-brand-100 bg-brand-50/50 p-4">
+            <div class="flex items-center gap-2 text-sm font-medium text-brand-800">
+              <span class="icon">person_add</span> ลูกค้าใหม่ — กรอกข้อมูลเพิ่ม
+            </div>
+            <input
+              class="input"
+              placeholder="ชื่อลูกค้า"
+              [class.input-error]="submitted() && !newName().trim()"
+              [(ngModel)]="newName"
+            />
+            <input class="input" placeholder="ที่อยู่ / จุดสังเกต" [(ngModel)]="newAddress" />
+            <div
+              class="flex items-center gap-2 rounded-xl border bg-white p-3 text-xs"
+              [class]="submitted() && !newPoint() ? 'border-red-400 text-red-700' : 'border-neutral-200 text-neutral-600'"
+            >
+              <span class="icon icon-fill text-brand-700">location_on</span>
+              @if (newPoint(); as p) {
+                ปักหมุดแล้ว · ห่างจากร้าน {{ distance(p) | number: '1.2-2' }} กม.
+              } @else {
+                คลิกบนแผนที่ด้านขวาเพื่อปักหมุดบ้านลูกค้า
+              }
+            </div>
+          </div>
+        }
+
+        <div class="field">
+          <span class="field-label">จำนวนข้าวกล่อง (สูงสุด {{ rules.maxBoxesPerOrder }} กล่อง)</span>
+          <div class="grid grid-cols-3 overflow-clip rounded-full border border-neutral-300">
+            @for (q of quantities; track q) {
+              <button
+                class="flex h-11 items-center justify-center gap-1 text-sm font-medium transition not-last:border-r not-last:border-neutral-300"
+                [class]="quantity() === q ? 'bg-brand-100 text-brand-900' : 'text-neutral-700 hover:bg-neutral-50'"
+                (click)="quantity.set(q)"
+              >
+                @if (quantity() === q) {
+                  <span class="icon text-lg!">check</span>
+                }
+                {{ q }} กล่อง
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="o-note">หมายเหตุ (ถ้ามี)</label>
+          <input id="o-note" class="input" placeholder="เช่น ไม่ใส่ผัก" [(ngModel)]="note" />
+        </div>
+
+        <button
+          class="btn btn-primary btn-lg w-full"
+          (click)="addOrder()"
+          [disabled]="busy() || (lookup() !== 'found' && lookup() !== 'new')"
+        >
+          <span class="icon">add</span> รับออเดอร์ · ฿{{ quantity() * pricing.pricePerBox }}
+        </button>
+      </div>
+    </section>
+
+    <div class="min-w-0 space-y-4">
+      <!-- แผนที่ -->
+      <section class="card overflow-clip">
+        @if (lookup() === 'new') {
+          <div class="flex items-center gap-2 bg-brand-700 px-5 py-2.5 text-sm text-white">
+            <span class="icon">touch_app</span> คลิกบนแผนที่เพื่อปักหมุดบ้านลูกค้าใหม่
+          </div>
+        }
+        <app-route-map
+          class="h-[340px]"
+          [markers]="markers()"
+          [pickable]="lookup() === 'new'"
+          [pickedPoint]="lookup() === 'new' ? newPoint() : null"
+          [focus]="focus()"
+          (picked)="onPicked($event)"
+          (markerClick)="highlightId.set(+$event)"
+        />
+      </section>
+
+      <!-- รายการออเดอร์ -->
+      <section class="card overflow-clip">
+        <div class="flex items-center justify-between px-5 pt-4 pb-2">
+          <h2 class="text-base font-medium text-ink">รายการออเดอร์</h2>
+          <span class="text-xs text-neutral-500">เรียงตามเวลาที่สั่ง</span>
+        </div>
+
+        @if (loading()) {
+          <div class="space-y-2 p-5">
+            @for (i of [1, 2, 3]; track i) {
+              <div class="h-12 animate-pulse rounded-xl bg-neutral-100"></div>
+            }
+          </div>
+        } @else if (orders().length === 0) {
+          <div class="px-5 py-14 text-center">
+            <span class="icon text-5xl! text-neutral-300">receipt_long</span>
+            <p class="mt-2 text-sm text-neutral-600">ยังไม่มีออเดอร์วันนี้</p>
+            <button class="btn btn-tonal mt-4" (click)="simulate()" [disabled]="busy()">
+              <span class="icon">casino</span> จำลองออเดอร์ 20–30 รายการ
+            </button>
+          </div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr class="border-b border-neutral-200 text-left text-xs text-neutral-500">
+                  <th class="py-2.5 pr-2 pl-5 font-medium">#</th>
+                  <th class="px-2 py-2.5 font-medium">ลูกค้า</th>
+                  <th class="px-2 py-2.5 font-medium">จำนวน</th>
+                  <th class="px-2 py-2.5 font-medium">ระยะ</th>
+                  <th class="px-2 py-2.5 font-medium">เวลาสั่ง</th>
+                  <th class="py-2.5 pr-5 pl-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (o of orders(); track o.id; let i = $index) {
+                  <tr
+                    class="cursor-pointer border-b border-neutral-100 transition last:border-0"
+                    [class]="highlightId() === o.id ? 'bg-brand-50' : 'hover:bg-neutral-50'"
+                    (click)="show(o)"
+                  >
+                    <td class="py-2.5 pr-2 pl-5 text-neutral-500">{{ i + 1 }}</td>
+                    <td class="px-2 py-2.5">
+                      <div class="font-medium text-ink">{{ o.customer.name }}</div>
+                      <div class="text-xs text-neutral-500">
+                        {{ formatPhone(o.customer.phone) }}
+                        @if (o.note) {
+                          · <span class="text-brand-700">{{ o.note }}</span>
+                        }
+                      </div>
+                    </td>
+                    <td class="px-2 py-2.5" (click)="$event.stopPropagation()">
+                      <div class="inline-flex items-center rounded-full border border-neutral-300">
+                        <button class="btn-icon size-8" (click)="changeQuantity(o, -1)" [disabled]="o.quantity <= 1" aria-label="ลด">
+                          <span class="icon text-lg!">remove</span>
+                        </button>
+                        <span class="w-6 text-center font-semibold text-ink">{{ o.quantity }}</span>
+                        <button
+                          class="btn-icon size-8"
+                          (click)="changeQuantity(o, 1)"
+                          [disabled]="o.quantity >= rules.maxBoxesPerOrder"
+                          aria-label="เพิ่ม"
+                        >
+                          <span class="icon text-lg!">add</span>
+                        </button>
+                      </div>
+                    </td>
+                    <td class="px-2 py-2.5 whitespace-nowrap text-neutral-600">{{ distance(o.customer) | number: '1.1-1' }} กม.</td>
+                    <td class="px-2 py-2.5 whitespace-nowrap text-neutral-600">{{ o.createdAt | date: 'HH:mm' }}</td>
+                    <td class="py-2.5 pr-5 pl-2 text-right" (click)="$event.stopPropagation()">
+                      <button class="btn-icon size-9 hover:text-red-600" (click)="remove(o)" title="ลบออเดอร์">
+                        <span class="icon text-[20px]!">delete</span>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    </div>
+  </div>
+</div>
